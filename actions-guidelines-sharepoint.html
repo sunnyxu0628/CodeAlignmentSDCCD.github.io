@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Actions Column Guidelines</title>
+  <style>
+    html, body { margin: 0; padding: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    .container { min-height: 100vh; background: #fff; color: #0f172a; }
+    header { padding: 16px 24px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; position: sticky; top: 0; z-index: 10; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .subtitle { font-size: 12px; color: #475569; }
+    main { padding: 24px; display: grid; gap: 24px; }
+    .card { border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    .card h2 { font-size: 16px; margin: 0 0 8px; }
+    .list { list-style: disc; margin: 0; padding-left: 20px; }
+    .muted { color: #64748b; font-size: 13px; }
+    .lookup textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; font-size: 14px; }
+    .result { margin-top: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; }
+    .grid { display: grid; gap: 24px; }
+    @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+    .badge { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: #64748b; }
+    .title { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React + ReactDOM + Babel (for in-browser JSX) -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useMemo, useEffect, useState } = React;
+
+    // Utility: case-insensitive contains
+    const icIncludes = (haystack, needle) =>
+      (haystack || "").toLowerCase().includes((needle || "").toLowerCase());
+
+    // Core rules engine translated from your latest canvas code
+    function interpretAction(action) {
+      const a = (action || "").trim();
+
+      // ✅ No Action Needed
+      if (
+        a === "Match with Code Alignment, no actions Needed" ||
+        a === "Not Flagged in Code Alignment, no action needed" ||
+        a === "Not Found in Old Inventory or Code Alignment, no action needed"
+      ) {
+        return {
+          title: "No Action Needed",
+          category: "No Action",
+          steps: ["Nothing further is required."],
+        };
+      }
+
+      // 📥 Add Codes from Old Inventory
+      if (a === "Add CIP & SOCs to META") {
+        return {
+          title: "Add CIP & SOCs to META",
+          category: "Old Inventory → META",
+          steps: [
+            "CIP & SOC are missing.",
+            "Add CIP from 'Program CIP Code'.",
+            "Add SOC codes from 'Program_Program SOC Code Code1–5'."
+          ],
+        };
+      }
+
+      if (icIncludes(a, "TOP mismatch with Old Inventory")) {
+        return {
+          title: "Add CIP & SOCs + TOP mismatch",
+          category: "Old Inventory → META",
+          steps: [
+            "Add CIP from 'Program CIP Code'.",
+            "Add SOC codes from 'Program_Program SOC Code Code1–5'.",
+            "TOP mismatch: review the 'Details' column to determine the correct TOP and ensure it aligns with the current CIP.",
+          ],
+        };
+      }
+
+      if (icIncludes(a, "Add SOCs to META") && icIncludes(a, "CIP mismatch")) {
+        return {
+          title: "Add SOCs + CIP mismatch",
+          category: "Old Inventory → META",
+          steps: [
+            "Add SOC codes from 'Program_Program SOC Code Code1–5'.",
+            "CIP mismatch: review the 'Details' column to determine the correct CIP and ensure it aligns with the current TOP.",
+          ],
+        };
+      }
+
+      // 🔄 Mismatch with Code Alignment
+      if (
+        icIncludes(a, "CIP & SOCs mismatch with Code Alignment") ||
+        icIncludes(a, "CIP mismatch with Code Alignment, SOC mismatch with Code Alignment")
+      ) {
+        return {
+          title: "CIP & SOC mismatch with Code Alignment",
+          category: "Code Alignment → META",
+          steps: [
+            "Update META with the approved CIP code and SOC codes listed in the 'Details' column.",
+            "Double-check CS and COCI.",
+          ],
+        };
+      }
+
+      if (a === "CIP missing, SOC mismatch with Code Alignment, update META with approved code alignment CIP and SOC codes in Details column; double check CS and COCI") {
+        return {
+          title: "CIP missing + SOC mismatch",
+          category: "Code Alignment → META",
+          steps: [
+            "Add the approved CIP and SOC codes from the 'Details' column to META.",
+            "Double-check CS and COCI.",
+          ],
+        };
+      }
+
+      if (a === "CIP missing, TOP mismatch with Code Alignment, need to update META with approved code alignment TOP&CIP codes in Details column; double check CS and COCI") {
+        return {
+          title: "CIP missing + TOP mismatch",
+          category: "Code Alignment → META",
+          steps: [
+            "Add the approved TOP and CIP codes from the 'Details' column to META.",
+            "Double-check CS and COCI.",
+          ],
+        };
+      }
+
+      if (
+        a === "CIP missing, update META with approved code alignment CIP code in Details column; double check CS and COCI" ||
+        icIncludes(a, "CIP missing (add approved)")
+      ) {
+        return {
+          title: "CIP missing (add approved)",
+          category: "Code Alignment → META",
+          steps: [
+            "Update META with the approved CIP code from the 'Details' column.",
+            "Double-check CS and COCI.",
+          ],
+        };
+      }
+
+      if (icIncludes(a, "CIP missing, update META with CIP found in Old Inventory") || icIncludes(a, "CIP missing (add from Old Inventory)")) {
+        return {
+          title: "CIP missing (from Old Inventory)",
+          category: "Old Inventory → META",
+          steps: [
+            "Add CIP from the 'Program CIP Code' column.",
+            "Double-check CS and COCI.",
+          ],
+        };
+      }
+
+      if (icIncludes(a, "SOC mismatch with Code Alignment")) {
+        return {
+          title: "SOC mismatch with Code Alignment",
+          category: "Code Alignment → META",
+          steps: [
+            "Update META to match the approved SOC codes listed in the 'Details' column.",
+          ],
+        };
+      }
+
+      if (icIncludes(a, "SOCs missing, added SOC from old Inventory") || icIncludes(a, "SOC missing, add SOC")) {
+        return {
+          title: "SOC missing (add from Old Inventory)",
+          category: "Old Inventory → META",
+          steps: ["Add SOC codes from 'Program_Program SOC Code Code1–5'."],
+        };
+      }
+
+      if (icIncludes(a, "TOP&CIP mismatch with Code Alignment")) {
+        return {
+          title: "TOP & CIP mismatch with Code Alignment",
+          category: "Code Alignment → META",
+          steps: [
+            "Update META with the approved TOP & CIP codes from the 'Details' column.",
+            "Double-check CS and COCI.",
+          ],
+        };
+      }
+
+      // ⚠️ Invalid SOC Codes
+      if (icIncludes(a, "need to drop invalid SOC Codes")) {
+        const extra = icIncludes(a, "missing Control number")
+          ? "Control number is missing — flag for review."
+          : null;
+        return {
+          title: "Drop invalid SOC codes",
+          category: "Data Cleanup",
+          steps: [
+            "Drop invalid SOC codes listed in the 'SOCs Check' column.",
+            ...(extra ? [extra] : []),
+          ],
+        };
+      }
+
+      // 🚫 Not Found in Old Inventory or Code Alignment
+      if (
+        a === "Not Found in Old Inventory or Code Alignment, CIP & SOCs need to be added" ||
+        a === "Not Found in Old Inventory or Code Alignment, CIP needs to be added" ||
+        a === "Not Found in Old Inventory or Code Alignment, SOCs need to be added" ||
+        icIncludes(a, "missing control number and TOP & CIP need to be added") ||
+        icIncludes(a, "missing control number and TOP, CIP & SOCs need to be added")
+      ) {
+        const which = [];
+        if (icIncludes(a, "CIP & SOCs need to be added")) which.push("CIP & SOCs");
+        if (icIncludes(a, "CIP needs to be added")) which.push("CIP");
+        if (icIncludes(a, "SOCs need to be added")) which.push("SOCs");
+        if (icIncludes(a, "TOP & CIP need to be added")) which.push("TOP & CIP");
+        if (icIncludes(a, "TOP, CIP & SOCs need to be added")) which.push("TOP, CIP & SOCs");
+
+        const missing = which.length ? which.join(", ") : "Codes";
+        const steps = [`${missing} missing — add to META.`];
+        if (icIncludes(a, "missing Control number")) steps.push("Control number is missing — flag for review.");
+
+        return {
+          title: `${missing} to be added`,
+          category: "Not Found → Add Codes",
+          steps,
+        };
+      }
+
+      if (icIncludes(a, "Missing Control Number") || icIncludes(a, "missing Control number")) {
+        return {
+          title: "Missing Control Number",
+          category: "Data Quality",
+          steps: ["Flag for review — Program Unique Code (COCI Control Number) is missing."],
+        };
+      }
+
+      // Unknown action string → generic guidance
+      return {
+        title: "Unrecognized Action",
+        category: "Review",
+        steps: [
+          "This action value isn't recognized.",
+          "Please review the 'Audit Column' & 'Details' & 'SOCs Check' columns or contact Sunny Xu qxu@sdccd.edu.",
+        ],
+      };
+    }
+
+    // --- Lightweight tests (console.assert) ---
+    function runTests() {
+      const cases = [
+        { input: "Match with Code Alignment, no actions Needed", expectIncludes: "Nothing further" },
+        { input: "Add CIP & SOCs to META", expectIncludes: "Program CIP Code" },
+        {
+          input: "Add CIP & SOCs to META, TOP mismatch with Old Inventory, review column Details to find which TOP is accurate and if it aligns with current CIP",
+          expectIncludes: "TOP mismatch",
+        },
+        {
+          input: "Add SOCs to META, CIP mismatch with Old Inventory, review column Details to find which CIP is accurate and if it aligns with current TOP",
+          expectIncludes: "CIP mismatch",
+        },
+        {
+          input: "CIP & SOCs mismatch with Code Alignment, update META with approved code alignment CIP code and SOC codes in Details column; double check CS and COCI",
+          expectIncludes: "approved CIP code and SOC codes",
+        },
+        {
+          input: "CIP missing, update META with CIP found in Old Inventory in Program CIP Code column; double check CS and COCI",
+          expectIncludes: "Program CIP Code",
+        },
+        {
+          input: "Not Found in Old Inventory or Code Alignment, missing Control number and need to drop invalid SOC Codes, can be found in SOCs check column",
+          expectIncludes: "Control number is missing",
+        },
+        {
+          input: "TOP&CIP mismatch with Code Alignment, need to update META with approved code alignment TOP&CIP codes in Details column; double check CS and COCI",
+          expectIncludes: "approved TOP & CIP codes",
+        },
+        // New tests
+        { input: "Not Found in Old Inventory or Code Alignment, CIP needs to be added", expectIncludes: "CIP missing — add to META" },
+        { input: "Not Found in Old Inventory or Code Alignment, SOCs need to be added", expectIncludes: "SOCs missing — add to META" },
+        { input: "SOC mismatch with Code Alignment, need to be updated to match approved code alignment SOCs (just need to be corrected in META)", expectIncludes: "approved SOC codes" },
+        { input: "SOCs missing, added SOC from old Inventory", expectIncludes: "Program_Program SOC Code Code1–5" },
+        { input: "Some totally unknown action value", equalsTitle: "Unrecognized Action" },
+      ];
+
+      cases.forEach((tc, i) => {
+        const res = interpretAction(tc.input);
+        const text = [res.title, ...(res.steps || [])].join(" | ");
+        if ("expectIncludes" in tc) {
+          console.assert(text.includes(tc.expectIncludes), `Test ${i + 1} failed: expected '${tc.expectIncludes}' in '${text}'`);
+        } else {
+          console.assert(res.title === tc.equalsTitle, `Test ${i + 1} failed: expected title '${tc.equalsTitle}', got '${res.title}'`);
+        }
+      });
+      console.log("ActionsGuidelines: tests completed");
+    }
+
+    function Card({ title, items, bullets, note }) {
+      return (
+        <div className="card">
+          <h2>{title}</h2>
+          {items && (
+            <ul className="list">
+              {items.map((t, i) => <li key={i}>{t}</li>)}
+            </ul>
+          )}
+          {bullets && (
+            <ul className="list">
+              {bullets.map(([label, desc], i) => (
+                <li key={i}><span className="title">{label}</span> — {desc}</li>
+              ))}
+            </ul>
+          )}
+          {note && <p className="muted">{note}</p>}
+        </div>
+      );
+    }
+
+    function App() {
+      const [input, setInput] = useState("");
+      const guidance = useMemo(() => interpretAction(input || ""), [input]);
+
+      useEffect(() => { runTests(); }, []);
+
+      return (
+        <div className="container">
+          <header>
+            <h1>Actions Column Guidelines</h1>
+            <div className="subtitle">Paste an <em>Actions</em> cell value below to get instant guidance. (Console shows self-tests.)</div>
+          </header>
+
+          <main>
+            <section className="card lookup">
+              <label className="title">Paste an <span>Actions</span> value</label>
+              <textarea
+                rows={3}
+                placeholder="e.g., Add CIP & SOCs to META, TOP mismatch with Old Inventory, review column Details..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+              />
+              <div className="result">
+                <div className="badge">Category</div>
+                <div className="title">{guidance.category}</div>
+                <div className="muted" style={{margin: '2px 0 6px'}}>{guidance.title}</div>
+                <ul className="list">
+                  {(guidance.steps || []).map((s, i) => <li key={i}>{s}</li>)}
+                </ul>
+              </div>
+            </section>
+
+            <section className="grid">
+              <Card
+                title="No Action Needed"
+                items={[
+                  "Match with Code Alignment, no actions Needed",
+                  "Not Flagged in Code Alignment, no action needed",
+                  "Not Found in Old Inventory or Code Alignment, no action needed",
+                ]}
+                note="Nothing further is required."
+              />
+
+              <Card
+                title="Add Codes from Old Inventory"
+                bullets={[
+                  ["Add CIP & SOCs to META", "CIP & SOC missing; add CIP from 'Program CIP Code' and SOCs from 'Program_Program SOC Code Code1–5'."],
+                  ["Add CIP & SOCs + TOP mismatch", "Add CIP & SOC from old inventory. TOP mismatch — check 'Details' for the correct TOP."],
+                  ["Add SOCs + CIP mismatch", "Add SOCs from old inventory. CIP mismatch — check 'Details' for the correct CIP."],
+                  ["SOC missing, add SOC from Old Inventory", "Add SOCs from 'Program_Program SOC Code Code1–5'."],
+                ]}
+              />
+
+              <Card
+                title="Mismatch with Code Alignment"
+                bullets={[
+                  ["CIP & SOC mismatch", "Update META with approved CIP & SOC from 'Details'. Double-check CS & COCI."],
+                  ["CIP missing + SOC mismatch", "Update META with approved CIP & SOC from 'Details'. Double-check CS & COCI."],
+                  ["CIP missing + TOP mismatch", "Update META with approved CIP & TOP from 'Details'. Double-check CS & COCI."],
+                  ["SOC mismatch only", "Update META with the approved SOCs from 'Details'."],
+                  ["TOP & CIP mismatch", "Update META with approved TOP & CIP from 'Details'. Double-check CS & COCI."],
+                ]}
+              />
+
+              <Card
+                title="CIP Missing Cases"
+                bullets={[
+                  ["CIP missing (add approved)", "Update META with approved CIP from 'Details'."],
+                  ["CIP missing (add from Old Inventory)", "Update META with CIP from 'Program CIP Code'."],
+                ]}
+              />
+
+              <Card
+                title="Invalid SOC Codes"
+                bullets={[
+                  ["Not Flagged → Drop invalid SOCs", "Drop invalid SOCs listed in 'SOCs Check'."],
+                  ["Not Found + Drop invalid SOCs", "Not in alignment; drop invalid SOCs listed in 'SOCs Check'."],
+                  ["Missing Control Number + Drop invalid SOCs", "Missing control number; drop invalid SOCs listed in 'SOCs Check'."],
+                ]}
+              />
+
+              <Card
+                title="Not Found in Old Inventory"
+                bullets={[
+                  ["CIP & SOCs need to be added", "Codes missing — add them."],
+                  ["CIP needs to be added", "Add CIP code."],
+                  ["SOCs need to be added", "Add SOC codes."],
+                  ["Missing Control Number", "Flag for review — no control number."],
+                  ["Missing Control Number + Codes", "Missing control number and codes (CIP/SOC/TOP). Add if program is valid."],
+                ]}
+              />
+            </section>
+
+            <div className="muted">Tip: Always check the <strong>Details</strong> column for mismatches; double-check <strong>CS</strong> and <strong>COCI</strong> after updates.</div>
+          </main>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
